@@ -6,9 +6,4 @@ scikit-learn
 xgboost
 dill
 catboost
-<<<<<<< HEAD
 Flask
-=======
-flask
-#-e .
->>>>>>> 472d43d9eb5f90aba5f12ef853ad01e7cfb26be8
