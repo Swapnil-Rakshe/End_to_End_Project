@@ -1,7 +1,9 @@
+# Import necessary libraries
 import os 
 from dataclasses import dataclass
 import sys
 
+# Import machine learning libraries
 from catboost import CatBoostRegressor
 from sklearn.ensemble import (
     AdaBoostRegressor,
@@ -16,16 +18,18 @@ from sklearn.tree import DecisionTreeRegressor
 from xgboost import XGBRegressor
 from sklearn.metrics import r2_score
 
+# Import custom modules
 from src.exception import CustomException
 from src.logger import logging
 
 from src.utils import save_object, evaluate_models
 
+# Define a dataclass for model training configuration
 @dataclass
 class ModelTrainerConfig:
     trained_model_file_path=os.path.join("artifacts", "model_trainer.pkl")
     
-
+# Define the ModelTrainer class
 class ModelTrainer:
     def __init__(self):
         self.model_trainer_config = ModelTrainerConfig()
@@ -33,6 +37,7 @@ class ModelTrainer:
     def initiate_model_trainer(self, train_array, test_array):
         try:
             logging.info("Split training and test input data")
+            # Split the data into training and testing sets
             X_train,y_train,X_test,y_test=(
                 train_array[:,:-1],
                 train_array[:,-1],
@@ -40,6 +45,7 @@ class ModelTrainer:
                 test_array[:,-1]
             )
             
+            # Define a dictionary of model instances for various algorithms
             models = {
                 "Random Forest": RandomForestRegressor(),
                 "Decision Tree": DecisionTreeRegressor(),
@@ -49,6 +55,8 @@ class ModelTrainer:
                 "CatBoosting Regressor": CatBoostRegressor(verbose=False),
                 "AdaBoost Regressor": AdaBoostRegressor(),
             }
+            
+            # Define hyperparameters for each model
             params={
                 "Decision Tree": {
                     'criterion':['squared_error', 'friedman_mse', 'absolute_error', 'poisson'],
@@ -87,7 +95,7 @@ class ModelTrainer:
                 
             }
 
-
+            # Evaluate models using cross-validation
             model_report:dict=evaluate_models(X_train=X_train,y_train=y_train,X_test=X_test,y_test=y_test,
                                              models=models,param=params)
             
@@ -101,21 +109,26 @@ class ModelTrainer:
             ]
             best_model = models[best_model_name]
 
+            # If the best model's score is below 0.6, raise a custom exception
             if best_model_score<0.6:
                 raise CustomException("No best model found")
             logging.info(f"Best found model on both training and testing dataset")
 
+            # Save the best model to a file
             save_object(
                 file_path=self.model_trainer_config.trained_model_file_path,
                 obj=best_model
             )
 
+            # Make predictions using the best model
             predicted=best_model.predict(X_test)
 
+            # Calculate the R-squared score
             r2_square = r2_score(y_test, predicted)
             return r2_square
         
         except Exception as e:
+            # If an exception is raised, re-raise it as a CustomException
             raise CustomException(e, sys)
     
 
